@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>COCA 5000 高频词测试</title>
+  <meta name="description" content="A simple COCA 5000 vocabulary self-test for daily review." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <p class="eyebrow">COCA 5000 Vocabulary Tester</p>
+      <h1>高频词每日 100 词测试</h1>
+      <p class="subtitle">按频率从高到低测试：能应用的词排除，不熟和不认识的词进入背词列表。</p>
+    </div>
+    <div class="header-actions">
+      <button id="exportProgressBtn" class="secondary">导出进度</button>
+      <label class="secondary file-label">导入进度<input id="importProgressInput" type="file" accept="application/json" /></label>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="card test-card" aria-live="polite">
+      <div class="toolbar">
+        <div>
+          <label for="daySelect">今日词组</label>
+          <select id="daySelect"></select>
+        </div>
+        <div>
+          <label for="batchSize">每组数量</label>
+          <select id="batchSize">
+            <option value="50">50</option>
+            <option value="100" selected>100</option>
+            <option value="150">150</option>
+            <option value="200">200</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="progress-wrap">
+        <div class="progress-line"><span id="progressText">加载中…</span><span id="rankRange"></span></div>
+        <div class="progress-bar"><div id="progressFill"></div></div>
+      </div>
+
+      <article id="wordCard" class="word-card">
+        <p class="rank" id="rankText"></p>
+        <h2 id="wordText">Loading…</h2>
+        <p id="posText" class="pos"></p>
+        <button id="speakBtn" class="ghost small">🔊 朗读</button>
+        <details id="detailsBox">
+          <summary>查看搭配 / 频率信息</summary>
+          <div id="detailsContent" class="details-content"></div>
+        </details>
+      </article>
+
+      <div class="choice-grid">
+        <button id="masteredBtn" class="choice mastered">能应用</button>
+        <button id="familiarBtn" class="choice familiar">认识但不熟</button>
+        <button id="unknownBtn" class="choice unknown">不认识</button>
+      </div>
+
+      <div class="nav-row">
+        <button id="prevBtn" class="secondary">上一个</button>
+        <button id="nextBtn" class="secondary">跳过 / 下一个</button>
+      </div>
+    </section>
+
+    <aside class="side-panel">
+      <section class="card stats-card">
+        <h2>统计</h2>
+        <div class="stats-grid">
+          <div><strong id="testedCount">0</strong><span>已测试</span></div>
+          <div><strong id="masteredCount">0</strong><span>能应用</span></div>
+          <div><strong id="familiarCount">0</strong><span>不太熟</span></div>
+          <div><strong id="unknownCount">0</strong><span>不认识</span></div>
+        </div>
+      </section>
+
+      <section class="card list-card">
+        <div class="list-header">
+          <h2>背词列表</h2>
+          <button id="exportStudyListBtn" class="secondary small">导出 TSV</button>
+        </div>
+        <p class="hint">包含“认识但不熟”和“不认识”的词。点击词条可回到对应单词。</p>
+        <div class="filter-row">
+          <button class="pill active" data-filter="study">待背</button>
+          <button class="pill" data-filter="familiar">不太熟</button>
+          <button class="pill" data-filter="unknown">不认识</button>
+          <button class="pill" data-filter="mastered">能应用</button>
+        </div>
+        <input id="searchInput" class="search" type="search" placeholder="搜索单词…" />
+        <div id="studyList" class="study-list"></div>
+      </section>
+
+      <section class="card danger-card">
+        <h2>维护</h2>
+        <button id="resetTodayBtn" class="secondary">重测当前组</button>
+        <button id="resetAllBtn" class="danger">清空全部进度</button>
+      </section>
+    </aside>
+  </main>
+
+  <footer>
+    <p>数据来自 COCA 5000 频率词表整理版。进度只保存在当前浏览器。</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
