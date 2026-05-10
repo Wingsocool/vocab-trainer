@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>COCA 5000 高频词测试</title>
-  <meta name="description" content="A simple COCA 5000 vocabulary self-test for daily review." />
+  <title>COCA 5000 高频词学习器</title>
+  <meta name="description" content="COCA 5000 vocabulary tester and spaced repetition reviewer." />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header class="app-header">
     <div>
-      <p class="eyebrow">COCA 5000 Vocabulary Tester</p>
-      <h1>高频词每日 100 词测试</h1>
-      <p class="subtitle">按频率从高到低测试：能应用的词排除，不熟和不认识的词进入背词列表。</p>
+      <p class="eyebrow">COCA 5000 Vocabulary Trainer</p>
+      <h1>高频词测试 + 遗忘曲线复习</h1>
+      <p class="subtitle">先按频率筛词，再把“不熟”和“不认识”的词加入背词池；每日复习按 1 / 3 / 7 / 15 / 30 / 60 天间隔推进。</p>
     </div>
     <div class="header-actions">
       <button id="exportProgressBtn" class="secondary">导出进度</button>
@@ -20,85 +20,193 @@
     </div>
   </header>
 
-  <main class="layout">
-    <section class="card test-card" aria-live="polite">
-      <div class="toolbar">
-        <div>
-          <label for="daySelect">今日词组</label>
-          <select id="daySelect"></select>
-        </div>
-        <div>
-          <label for="batchSize">每组数量</label>
-          <select id="batchSize">
-            <option value="50">50</option>
-            <option value="100" selected>100</option>
-            <option value="150">150</option>
-            <option value="200">200</option>
-          </select>
-        </div>
-      </div>
+  <nav class="tabs" aria-label="主功能导航">
+    <button class="tab active" data-view="testView">测试新词</button>
+    <button class="tab" data-view="reviewView">今日复习 <span id="dueBadge" class="tab-badge">0</span></button>
+    <button class="tab" data-view="listView">背词池</button>
+    <button class="tab" data-view="statsView">统计</button>
+    <button class="tab" data-view="settingsView">设置</button>
+  </nav>
 
-      <div class="progress-wrap">
-        <div class="progress-line"><span id="progressText">加载中…</span><span id="rankRange"></span></div>
-        <div class="progress-bar"><div id="progressFill"></div></div>
-      </div>
+  <main class="app-main">
+    <section id="testView" class="view active">
+      <div class="layout">
+        <section class="card test-card" aria-live="polite">
+          <div class="toolbar">
+            <div>
+              <label for="daySelect">今日词组</label>
+              <select id="daySelect"></select>
+            </div>
+            <div>
+              <label for="batchSize">每组数量</label>
+              <select id="batchSize">
+                <option value="50" selected>50</option>
+                <option value="100">100</option>
+                <option value="150">150</option>
+                <option value="200">200</option>
+              </select>
+            </div>
+          </div>
 
-      <article id="wordCard" class="word-card">
-        <p class="rank" id="rankText"></p>
-        <h2 id="wordText">Loading…</h2>
-        <p id="posText" class="pos"></p>
-        <button id="speakBtn" class="ghost small">🔊 朗读</button>
-        <details id="detailsBox">
-          <summary>查看搭配 / 频率信息</summary>
-          <div id="detailsContent" class="details-content"></div>
-        </details>
-      </article>
+          <div class="progress-wrap">
+            <div class="progress-line"><span id="progressText">加载中…</span><span id="rankRange"></span></div>
+            <div class="progress-bar"><div id="progressFill"></div></div>
+          </div>
 
-      <div class="choice-grid">
-        <button id="masteredBtn" class="choice mastered">能应用</button>
-        <button id="familiarBtn" class="choice familiar">认识但不熟</button>
-        <button id="unknownBtn" class="choice unknown">不认识</button>
-      </div>
+          <article id="wordCard" class="word-card">
+            <p class="rank" id="rankText"></p>
+            <h2 id="wordText">Loading…</h2>
+            <p id="posText" class="pos"></p>
+            <button id="speakBtn" class="ghost small">🔊 朗读</button>
+            <details id="detailsBox">
+              <summary>查看搭配 / 频率信息</summary>
+              <div id="detailsContent" class="details-content"></div>
+            </details>
+          </article>
 
-      <div class="nav-row">
-        <button id="prevBtn" class="secondary">上一个</button>
-        <button id="nextBtn" class="secondary">跳过 / 下一个</button>
+          <div class="choice-grid">
+            <button id="masteredBtn" class="choice mastered">能应用</button>
+            <button id="familiarBtn" class="choice familiar">认识但不熟</button>
+            <button id="unknownBtn" class="choice unknown">不认识</button>
+          </div>
+
+          <div class="nav-row">
+            <button id="prevBtn" class="secondary">上一个</button>
+            <button id="nextBtn" class="secondary">跳过 / 下一个</button>
+          </div>
+        </section>
+
+        <aside class="side-panel">
+          <section class="card stats-card compact-stats">
+            <h2>今日概览</h2>
+            <div class="stats-grid">
+              <div><strong id="testedCount">0</strong><span>已测试</span></div>
+              <div><strong id="masteredCount">0</strong><span>能应用</span></div>
+              <div><strong id="studyCount">0</strong><span>待背</span></div>
+              <div><strong id="dueCountSide">0</strong><span>今日待复习</span></div>
+            </div>
+          </section>
+
+          <section class="card list-card">
+            <div class="list-header">
+              <h2>快速背词池</h2>
+              <button id="exportStudyListBtn" class="secondary small">导出 TSV</button>
+            </div>
+            <p class="hint">这里显示需要背的词。完整列表在“背词池”页面。</p>
+            <div id="quickStudyList" class="study-list compact-list"></div>
+          </section>
+        </aside>
       </div>
     </section>
 
-    <aside class="side-panel">
-      <section class="card stats-card">
-        <h2>统计</h2>
-        <div class="stats-grid">
-          <div><strong id="testedCount">0</strong><span>已测试</span></div>
-          <div><strong id="masteredCount">0</strong><span>能应用</span></div>
-          <div><strong id="familiarCount">0</strong><span>不太熟</span></div>
-          <div><strong id="unknownCount">0</strong><span>不认识</span></div>
+    <section id="reviewView" class="view">
+      <section class="card review-card">
+        <div class="section-header">
+          <div>
+            <h2>今日复习</h2>
+            <p class="hint">只显示到期的词。点“认识并会用”会进入下一轮间隔；点“忘了”会回到明天复习。</p>
+          </div>
+          <button id="startDueBtn" class="secondary">跳到第一个到期词</button>
+        </div>
+
+        <div class="review-summary">
+          <div><strong id="dueCountMain">0</strong><span>今日待复习</span></div>
+          <div><strong id="reviewedTodayCount">0</strong><span>今日已复习</span></div>
+          <div><strong id="maturedCount">0</strong><span>复习后掌握</span></div>
+        </div>
+
+        <article class="word-card review-word-card">
+          <p class="rank" id="reviewRankText"></p>
+          <h2 id="reviewWordText">暂无到期词</h2>
+          <p id="reviewPosText" class="pos"></p>
+          <button id="reviewSpeakBtn" class="ghost small">🔊 朗读</button>
+          <details id="reviewDetailsBox">
+            <summary>查看搭配 / 复习信息</summary>
+            <div id="reviewDetailsContent" class="details-content"></div>
+          </details>
+        </article>
+
+        <div class="choice-grid review-actions">
+          <button id="reviewGoodBtn" class="choice mastered">认识并会用</button>
+          <button id="reviewFuzzyBtn" class="choice familiar">认识但不熟</button>
+          <button id="reviewForgotBtn" class="choice unknown">忘了 / 不认识</button>
+        </div>
+
+        <div class="nav-row">
+          <button id="prevReviewBtn" class="secondary">上一个</button>
+          <button id="nextReviewBtn" class="secondary">下一个</button>
         </div>
       </section>
+    </section>
 
-      <section class="card list-card">
-        <div class="list-header">
-          <h2>背词列表</h2>
-          <button id="exportStudyListBtn" class="secondary small">导出 TSV</button>
+    <section id="listView" class="view">
+      <section class="card list-page-card">
+        <div class="section-header">
+          <div>
+            <h2>背词池 / 已掌握</h2>
+            <p class="hint">“测试时能应用”和“复习后掌握”的词会排除出待背；其他词按到期日进入复习。</p>
+          </div>
+          <button id="exportListPageBtn" class="secondary">导出当前待背 TSV</button>
         </div>
-        <p class="hint">包含“认识但不熟”和“不认识”的词。点击词条可回到对应单词。</p>
         <div class="filter-row">
-          <button class="pill active" data-filter="study">待背</button>
+          <button class="pill active" data-filter="study">待背全部</button>
+          <button class="pill" data-filter="due">今日到期</button>
           <button class="pill" data-filter="familiar">不太熟</button>
           <button class="pill" data-filter="unknown">不认识</button>
-          <button class="pill" data-filter="mastered">能应用</button>
+          <button class="pill" data-filter="mastered">已掌握</button>
+          <button class="pill" data-filter="untested">未测试</button>
         </div>
-        <input id="searchInput" class="search" type="search" placeholder="搜索单词…" />
-        <div id="studyList" class="study-list"></div>
+        <input id="searchInput" class="search" type="search" placeholder="搜索单词、词性、rank…" />
+        <div id="studyList" class="study-list large-list"></div>
       </section>
+    </section>
 
-      <section class="card danger-card">
-        <h2>维护</h2>
-        <button id="resetTodayBtn" class="secondary">重测当前组</button>
-        <button id="resetAllBtn" class="danger">清空全部进度</button>
+    <section id="statsView" class="view">
+      <section class="card stats-page-card">
+        <h2>学习统计</h2>
+        <div class="stats-grid large-stats">
+          <div><strong id="statTotal">5000</strong><span>总词数</span></div>
+          <div><strong id="statTested">0</strong><span>已测试</span></div>
+          <div><strong id="statUntested">0</strong><span>未测试</span></div>
+          <div><strong id="statMastered">0</strong><span>已掌握 / 能应用</span></div>
+          <div><strong id="statFamiliar">0</strong><span>认识但不熟</span></div>
+          <div><strong id="statUnknown">0</strong><span>不认识</span></div>
+          <div><strong id="statDue">0</strong><span>今日待复习</span></div>
+          <div><strong id="statLearning">0</strong><span>背词池总数</span></div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-line"><span>总体掌握率</span><span id="masteryRate">0%</span></div>
+          <div class="progress-bar"><div id="masteryFill"></div></div>
+        </div>
       </section>
-    </aside>
+    </section>
+
+    <section id="settingsView" class="view">
+      <section class="card settings-card">
+        <h2>设置与维护</h2>
+        <div class="settings-grid">
+          <label>
+            复习间隔（天，用逗号分隔）
+            <input id="intervalInput" class="search" type="text" value="1,3,7,15,30,60" />
+          </label>
+          <label>
+            每日新词默认数量
+            <select id="defaultBatchSize">
+              <option value="50" selected>50</option>
+              <option value="100">100</option>
+              <option value="150">150</option>
+              <option value="200">200</option>
+            </select>
+          </label>
+        </div>
+        <div class="maintenance-row">
+          <button id="saveSettingsBtn" class="secondary">保存设置</button>
+          <button id="resetTodayBtn" class="secondary">重测当前组</button>
+          <button id="resetAllBtn" class="danger">清空全部进度</button>
+        </div>
+        <p class="hint">进度保存在当前浏览器。换设备前请先导出进度 JSON，再在新设备导入。</p>
+      </section>
+    </section>
   </main>
 
   <footer>
