@@ -1,4 +1,4 @@
-const CACHE_NAME = 'coca5000-vocab-trainer-v3-pwa-20260510';
+const CACHE_NAME = 'coca5000-vocab-trainer-v4-pwa-20260525';
 const APP_SHELL = [
   './',
   './index.html',

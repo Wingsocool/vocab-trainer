@@ -9,6 +9,8 @@ const POS_LABELS = {
   t: 'to + infinitive', u: 'interjection', v: 'verb', x: 'negation'
 };
 
+let fallbackAudio = null;
+let lastSpeakTime = 0;
 const state = {
   words: [],
   progress: {},
@@ -607,13 +609,90 @@ function resetAll() {
   renderAll();
 }
 
+function fallbackTTS(word, lang = 'en') {
+  const url =
+    `https://translate.google.com/translate_tts?ie=UTF-8` +
+    `&client=tw-ob` +
+    `&tl=${lang}` +
+    `&q=${encodeURIComponent(word)}`;
+
+  // 复用 audio，避免安卓频繁创建实例卡顿
+  if (!fallbackAudio) {
+    fallbackAudio = new Audio();
+  }
+
+  fallbackAudio.pause();
+
+  fallbackAudio.src = url;
+
+  fallbackAudio.onerror = () => {
+    console.warn('Google TTS fallback failed');
+  };
+
+  fallbackAudio.play().catch(err => {
+    console.warn('Audio play failed:', err);
+  });
+}
+
 function speakWord(word) {
-  if (!word || !('speechSynthesis' in window)) return;
-  const utterance = new SpeechSynthesisUtterance(word);
-  utterance.lang = 'en-US';
-  utterance.rate = 0.82;
-  window.speechSynthesis.cancel();
-  window.speechSynthesis.speak(utterance);
+  if (!word) return;
+
+  // 防止连续狂点
+  const now = Date.now();
+  if (now - lastSpeakTime < 800) return;
+  lastSpeakTime = now;
+
+  const isAndroid = /Android/i.test(navigator.userAgent);
+
+  // 安卓直接走 Google fallback
+  // 国产 ROM 的 Web Speech API 太不稳定
+  if (isAndroid) {
+    fallbackTTS(word);
+    return;
+  }
+
+  // 系统不支持 speechSynthesis
+  if (!('speechSynthesis' in window)) {
+    fallbackTTS(word);
+    return;
+  }
+
+  try {
+    // 仅在正在播放时 cancel
+    if (window.speechSynthesis.speaking) {
+      window.speechSynthesis.cancel();
+    }
+
+    const utterance = new SpeechSynthesisUtterance(word);
+
+    utterance.lang = 'en-US';
+    utterance.rate = 0.82;
+
+    let started = false;
+
+    utterance.onstart = () => {
+      started = true;
+    };
+
+    utterance.onerror = () => {
+      console.warn('Native TTS failed, fallback to Google TTS');
+      fallbackTTS(word);
+    };
+
+    window.speechSynthesis.speak(utterance);
+
+    // 某些浏览器会 silent fail
+    setTimeout(() => {
+      if (!started) {
+        console.warn('Native TTS silent failed, fallback to Google TTS');
+        fallbackTTS(word);
+      }
+    }, 1200);
+
+  } catch (err) {
+    console.warn('Native TTS crashed:', err);
+    fallbackTTS(word);
+  }
 }
 
 function speakCurrentWord() {
